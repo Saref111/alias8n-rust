@@ -1,4 +1,4 @@
-use std::fs::{read_to_string, write};
+use std::{fs::{read_to_string, write}, collections::HashMap};
 use serde_json::{Result, Value};
 use regex::Regex;
 use reducer::{ReducerConfig, Reducer};
@@ -50,14 +50,15 @@ fn alias8n(config: Option<Config>) {
 
     let aliases = re.captures_iter(&src_string);
 
-
-    let mut reducer = Reducer::new(ReducerConfig {
+    let reducer = Reducer::new(ReducerConfig {
         src_string: &src_string,
-        ctx,
-        aliases: aliases,
+        ctx: json_value_into_hashmap(ctx),
+        aliases: captures_into_vec(aliases),
     });
-    // println!("ctx: {}", ctx);
-    // println!("src_string: {}", src_string);
+
+    let aliased_src_string = reducer.init();
+
+    write(dest, aliased_src_string).unwrap();
 }
 
 fn try_exists(path: &str) -> bool{
@@ -66,4 +67,31 @@ fn try_exists(path: &str) -> bool{
         Ok(_) => true,
         Err(_) => false,
     }
+}
+
+fn captures_into_vec(captures: regex::CaptureMatches) -> Vec<String> {
+    let mut vec = Vec::new();
+    for capture in captures {
+        vec.push(capture.get(0).unwrap().as_str().to_string());
+    }
+    vec
+}
+
+fn json_value_into_hashmap(value: Value) -> HashMap<String, Value> {
+    let mut map = HashMap::new();
+    match value {
+        Value::Object(obj) => {
+            for (key, value) in obj {
+                map.insert(key, value);
+            }
+        }
+        Value::Array(arr) => {
+            for (index, value) in arr.iter().enumerate() {
+                map.insert(index.to_string(), value.clone());
+            }
+        }
+        _ => {}
+    }
+    println!("{:?}", map);
+    map
 }
