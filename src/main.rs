@@ -50,14 +50,14 @@ fn alias8n(config: Option<Config>) {
 
     let aliases = re.captures_iter(&src_string);
 
-    let reducer = Reducer::new(ReducerConfig {
-        src_string: &src_string,
+    let mut reducer = Reducer::new(ReducerConfig {
+        src_string: src_string.to_owned(),
         ctx: json_value_into_hashmap(ctx),
         aliases: captures_into_vec(aliases),
     });
 
     let aliased_src_string = reducer.init();
-
+    
     write(dest, aliased_src_string).unwrap();
 }
 
@@ -92,6 +92,5 @@ fn json_value_into_hashmap(value: Value) -> HashMap<String, Value> {
         }
         _ => {}
     }
-    println!("{:?}", map);
     map
 }
