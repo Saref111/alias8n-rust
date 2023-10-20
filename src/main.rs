@@ -1,5 +1,5 @@
-use std::{fs::{read_to_string, write}, collections::HashMap};
-use serde_json::{Result as JsonResult, Value};
+use std::fs::{read_to_string, write};
+use serde_json::Value;
 use regex::Regex;
 
 struct Config {
@@ -27,7 +27,6 @@ enum AliasError {
 fn main() {
     alias8n(None);	
 }
-
 
 fn alias8n(config: Option<Config>) {
     let config = config.unwrap_or_default();
@@ -84,14 +83,14 @@ fn replace_aliases(src_string: &str, aliases: &Vec<String>, ctx: Value) -> Strin
         let processed = process_alias(alias, &ctx);
         match processed {
             Ok(processed) => {
-                println!("{:#?}, {}", processed, "Hello world!");
+                result_string = result_string.replace(alias, &processed);
             },
             Err(e) => {
                 println!("{:?}: {}", e, alias);
             },
         }
     }
-    String::from("Hello")
+    result_string
 }
 
 fn process_alias(alias: &str, ctx: &Value) -> Result<String, AliasError> {
