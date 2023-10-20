@@ -11,7 +11,7 @@ pub struct Reducer {
     config: ReducerConfig,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct CurrentAlias {
     raw_alias: String,
     nesting: Vec<String>,
@@ -54,6 +54,7 @@ impl Reducer {
             alias_args: alias_args.clone(),
             alias_name: alias_name.clone(),
         };
+        // println!("{:#?}", current_alias);
 
         let nesting = nesting.clone();
         let raw_alias = raw_alias.clone();
@@ -73,9 +74,15 @@ impl Reducer {
     }
 
     fn reduce_object(&mut self, current_alias: CurrentAlias) {
-        let value: serde_json::Value = current_alias.nesting.iter().fold(  serde_json::Value::Null, |acc, key| {
-            self.config.ctx.clone().get(key).unwrap().clone()
-        });
+        let value: serde_json::Value = current_alias.nesting.iter().fold(
+            serde_json::Value::Null, 
+            |acc, key| {
+                match self.config.ctx.get(key) {
+                    Some(v) => v.clone(),
+                    None => acc,
+                }
+            }
+        );
 
         self.check_type(value, current_alias);
     }
@@ -99,9 +106,10 @@ impl Reducer {
     }
 
     fn check_type(&mut self, alias_value: serde_json::Value, current_alias: CurrentAlias) {
+        println!("Alias value: {:#?}", alias_value);
         match alias_value {
             serde_json::Value::Array(v) => self.reduce_array(v, current_alias),
-            serde_json::Value::Object(_) => self.reduce_object(current_alias),
+            serde_json::Value::Object(v) => self.reduce_object(current_alias),
             serde_json::Value::String(string_value) => {
                 println!("Reduced alias: {:?}", self.config.aliases);
                 if current_alias.alias_args.len() < 2 {
@@ -120,7 +128,6 @@ fn process_alias(raw_alias: &str) -> (String, Vec<String>, Vec<String>) {
     
     let alias_args: Vec<String> = alias.split(',').map(String::from).collect();
     let mut alias_name = alias_args[0].clone();
-
     let nesting: Vec<String> = alias_name.split('.').map(String::from).collect();
     alias_name = nesting[0].clone();
 

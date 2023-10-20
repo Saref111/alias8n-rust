@@ -1,3 +1,5 @@
 {
-    "name": "jquery.iframe-transport.js"
+    "name": {
+        "message": "Hello world!"
+    }
 }
