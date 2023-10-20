@@ -98,9 +98,18 @@ fn process_alias(alias: &str, ctx: &Value) -> Result<String, AliasError> {
 
     let arguments = raw_alias.split(",").collect::<Vec<&str>>();
 
+    
+
     let nesting = arguments.get(0).unwrap().split(".").collect::<Vec<&str>>();
     
-    let value_from_ctx = get_value_from_ctx(nesting, ctx)?;
+    let mut value_from_ctx = get_value_from_ctx(nesting, ctx)?;
+
+    if arguments.len() > 1 {
+        for (i, arg) in arguments[1..].iter().enumerate() {
+            value_from_ctx = value_from_ctx.replace(&format!("<{}>", i + 1), arg.trim());
+        }
+    }
+
     Ok(value_from_ctx)
 }
 
