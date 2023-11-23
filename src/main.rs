@@ -1,7 +1,7 @@
 use crate::alias8n::{Config, alias8n};
 
 mod alias8n;
-mod lib;
+mod utils;
 
 fn main() {
     // alias8n --ctx ./ctx.json --source ./index.html --dest ./index-aliased.html
