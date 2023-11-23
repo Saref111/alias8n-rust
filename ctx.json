@@ -3,5 +3,7 @@
         "message": "Hello world!"
     },
     "body": "body",
-    "alias": "<1> alias!"
+    "alias": "<1> alias!",
+    "bool": true,
+    "number": 1
 }

@@ -124,9 +124,12 @@ fn get_value_from_ctx(nesting: Vec<&str>, ctx: &Value) -> Result<String, AliasEr
         };
     }
     
-    if value.is_string() { // TODO: value can be a number, bool, string,
+    if value.is_string() { // TODO: think about array handling
         let value = value.as_str().ok_or(AliasError::InvalidAlias(String::from("Invalid alias value")))?;
         return Ok(value[0..value.len()].to_string());
+    } else if value.is_boolean() || value.is_number() {
+        let value = value.to_string();
+        return Ok(value);
     } else {
         return Err(AliasError::InvalidContext(String::from("Invalid context")));
     }
