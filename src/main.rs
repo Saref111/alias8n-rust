@@ -1,96 +1,126 @@
-use std::{fs::{read_to_string, write}, collections::HashMap};
-use serde_json::{Result, Value};
-use regex::Regex;
-use reducer::{ReducerConfig, Reducer};
+use crate::alias8n::{Config, alias8n};
 
-mod reducer;
-
-struct Config {
-    ctx_path: Option<String>,
-    source: Option<String>,
-    dest: Option<String>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            ctx_path: Some(String::from("./ctx.json")),
-            source: Some(String::from("./index.html")),
-            dest: Some(String::from("./index-aliased.html")),
-        }
-    }
-}
+mod alias8n;
+mod lib;
 
 fn main() {
-    alias8n(None);	
+    // alias8n --ctx ./ctx.json --source ./index.html --dest ./index-aliased.html
+    // alias8n --ctx ./ctx.json --source ./index.html
+    // alias8n --ctx ./ctx.json
+    // alias8n
+    let args: Vec<String> = std::env::args().collect();
+
+    let config = get_config_from_args(args);
+    alias8n(config);	
 }
 
-
-fn alias8n(config: Option<Config>) {
-    let config = config.unwrap_or_default();
-    let ctx_path = config.ctx_path.unwrap();
-    let source = config.source.unwrap();
-    let dest = config.dest.unwrap();
-
-    if !ctx_path.ends_with(".json") {
-        panic!("Context file should be a json file");
-    }
-    if !try_exists(&ctx_path) {
-        panic!("No context file found by given path");
-    }       
-    if !try_exists(&source) {
-        panic!("No source file found by given path");
-    }
-
-    let ctx = read_to_string(&ctx_path).unwrap();
-    let ctx: Value = serde_json::from_str(&ctx).unwrap();
-    let src_string = read_to_string(&source).unwrap();
-
-    let re = Regex::new(r"a\(:.*?:\)").unwrap();
-
-    let aliases = re.captures_iter(&src_string);
-
-    let mut reducer = Reducer::new(ReducerConfig {
-        src_string: src_string.to_owned(),
-        ctx: json_value_into_hashmap(ctx),
-        aliases: captures_into_vec(aliases),
-    });
-
-    let aliased_src_string = reducer.init();
-    
-    write(dest, aliased_src_string).unwrap();
-}
-
-fn try_exists(path: &str) -> bool{
-    let result = std::fs::metadata(path);
-    match result {
-        Ok(_) => true,
-        Err(_) => false,
-    }
-}
-
-fn captures_into_vec(captures: regex::CaptureMatches) -> Vec<String> {
-    let mut vec = Vec::new();
-    for capture in captures {
-        vec.push(capture.get(0).unwrap().as_str().to_string());
-    }
-    vec
-}
-
-fn json_value_into_hashmap(value: Value) -> HashMap<String, Value> {
-    let mut map = HashMap::new();
-    match value {
-        Value::Object(obj) => {
-            for (key, value) in obj {
-                map.insert(key, value);
-            }
+fn get_config_from_args(args: Vec<String>) -> Option<Config> {
+    let mut config = Config::default();
+    let mut i = 1;
+    while i < args.len() {
+        let arg = args.get(i).unwrap();
+        match arg.as_str() {
+            "--ctx" => {
+                i += 1;
+                config.ctx_path = Some(args.get(i).unwrap().to_string());
+            },
+            "--source" => {
+                i += 1;
+                config.source = Some(args.get(i).unwrap().to_string());
+            },
+            "--dest" => {
+                i += 1;
+                config.dest = Some(args.get(i).unwrap().to_string());
+            },
+            _ => {
+                panic!("Invalid argument");
+            },
         }
-        Value::Array(arr) => {
-            for (index, value) in arr.iter().enumerate() {
-                map.insert(index.to_string(), value.clone());
-            }
-        }
-        _ => {}
+        i += 1;
     }
-    map
+    Some(config)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_config_from_args() {
+        let args = vec![
+            String::from("alias8n"),
+            String::from("--ctx"),
+            String::from("./ctx.json"),
+            String::from("--source"),
+            String::from("./index.html"),
+            String::from("--dest"),
+            String::from("./index-aliased.html"),
+        ];
+        let config = get_config_from_args(args).unwrap();
+        assert_eq!(config.ctx_path.unwrap(), "./ctx.json");
+        assert_eq!(config.source.unwrap(), "./index.html");
+        assert_eq!(config.dest.unwrap(), "./index-aliased.html");
+    }
+
+    #[test]
+    fn test_get_config_from_args_with_default() {
+        let args = vec![
+            String::from("alias8n"),
+            String::from("--ctx"),
+            String::from("./ctx.json"),
+        ];
+        let config = get_config_from_args(args).unwrap();
+        assert_eq!(config.ctx_path.unwrap(), "./ctx.json");
+        assert_eq!(config.source.unwrap(), "./index.html");
+        assert_eq!(config.dest.unwrap(), "./index-aliased.html");
+    }
+
+    #[test]
+    fn test_get_config_from_args_with_default_2() {
+        let args = vec![
+            String::from("alias8n"),
+            String::from("--ctx"),
+            String::from("./ctx.json"),
+            String::from("--source"),
+            String::from("./index.html"),
+        ];
+        let config = get_config_from_args(args).unwrap();
+        assert_eq!(config.ctx_path.unwrap(), "./ctx.json");
+        assert_eq!(config.source.unwrap(), "./index.html");
+        assert_eq!(config.dest.unwrap(), "./index-aliased.html");
+    }
+
+    #[test]
+    fn test_get_config_from_args_with_default_3() {
+        let args = vec![
+            String::from("alias8n"),
+            String::from("--ctx"),
+            String::from("./ctx.json"),
+            String::from("--dest"),
+            String::from("./index-aliased.html"),
+        ];
+        let config = get_config_from_args(args).unwrap();
+        assert_eq!(config.ctx_path.unwrap(), "./ctx.json");
+        assert_eq!(config.source.unwrap(), "./index.html");
+        assert_eq!(config.dest.unwrap(), "./index-aliased.html");
+    }
+
+    #[test]
+    fn test_get_config_from_args_with_default_4() {
+        let args = vec![
+            String::from("alias8n"),
+            String::from("--ctx"),
+            String::from("./ctx.json"),
+            String::from("--source"),
+            String::from("./index.html"),
+            String::from("--dest"),
+            String::from("./index-aliased.html"),
+            String::from("--ctx"),
+            String::from("./ctx2.json"),
+        ];
+        let config = get_config_from_args(args).unwrap();
+        assert_eq!(config.ctx_path.unwrap(), "./ctx2.json");
+        assert_eq!(config.source.unwrap(), "./index.html");
+        assert_eq!(config.dest.unwrap(), "./index-aliased.html");
+    }
 }
