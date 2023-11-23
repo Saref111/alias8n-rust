@@ -1,7 +1,7 @@
 use std::fs::{read_to_string, write};
 use serde_json::Value;
 use regex::Regex;
-use crate::lib::{try_exists, captures_into_vec};
+use crate::utils::{try_exists, captures_into_vec};
 
 
 pub struct Config {
